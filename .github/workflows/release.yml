@@ -10,7 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       packages: write
     steps:
     - uses: actions/checkout@v4
@@ -24,8 +23,3 @@ jobs:
 
     - name: Push Docker
       run: make push REGISTRY_NAME=ghcr.io/${{ github.repository_owner }} VERSION="${GITHUB_REF_NAME#v}"
-
-    - uses: "marvinpinto/action-automatic-releases@latest"
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: false
