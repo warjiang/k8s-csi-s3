@@ -10,10 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Push Docker
-      run: (echo '${{ secrets.REGISTRY_KEY }}' | docker login --username json_key --password-stdin cr.yandex) && make push
+      run: (echo '${{ secrets.REGISTRY_KEY }}' | docker login --username json_key --password-stdin cr.yandex) && make push VERSION="${GITHUB_REF_NAME#v}"
 
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:

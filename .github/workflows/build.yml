@@ -1,0 +1,19 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - "fix/**"
+
+jobs:
+  test-and-build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.9"
+      - run: go test ./pkg/mounter
+      - run: docker build --tag csi-s3-driver:ci .

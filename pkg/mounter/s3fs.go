@@ -3,6 +3,7 @@ package mounter
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/yandex-cloud/k8s-csi-s3/pkg/s3"
 )
@@ -32,10 +33,14 @@ func (s3fs *s3fsMounter) Mount(target, volumeID string) error {
 	if err := writes3fsPass(s3fs.pwFileContent); err != nil {
 		return err
 	}
+	return fuseMountForeground(target, s3fsCmd, s3fs.mountArgs(target), nil)
+}
+
+func (s3fs *s3fsMounter) mountArgs(target string) []string {
 	args := []string{
 		fmt.Sprintf("%s:/%s", s3fs.meta.BucketName, s3fs.meta.Prefix),
 		target,
-		"-o", "use_path_request_style",
+		"-f",
 		"-o", fmt.Sprintf("url=%s", s3fs.url),
 		"-o", "allow_other",
 		"-o", "mp_umask=000",
@@ -43,8 +48,21 @@ func (s3fs *s3fsMounter) Mount(target, volumeID string) error {
 	if s3fs.region != "" {
 		args = append(args, "-o", fmt.Sprintf("endpoint=%s", s3fs.region))
 	}
-	args = append(args, s3fs.meta.MountOptions...)
-	return fuseMount(target, s3fsCmd, args, nil)
+	for i := 0; i < len(s3fs.meta.MountOptions); i++ {
+		option := strings.TrimSpace(s3fs.meta.MountOptions[i])
+		if option == "-o" && i+1 < len(s3fs.meta.MountOptions) &&
+			strings.TrimSpace(s3fs.meta.MountOptions[i+1]) == "use_path_request_style" {
+			i++
+			continue
+		}
+		if option == "use_path_request_style" ||
+			option == "-ouse_path_request_style" ||
+			option == "-o=use_path_request_style" {
+			continue
+		}
+		args = append(args, s3fs.meta.MountOptions[i])
+	}
+	return args
 }
 
 func writes3fsPass(pwFileContent string) error {

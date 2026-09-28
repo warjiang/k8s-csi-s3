@@ -71,6 +71,31 @@ func fuseMount(path string, command string, args []string, envs []string) error 
 	return waitForMount(path, 10*time.Second)
 }
 
+func fuseMountForeground(path string, command string, args []string, envs []string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = append(cmd.Environ(), envs...)
+	glog.V(3).Infof("Mounting foreground fuse with command: %s and args: %s", command, args)
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start foreground fuse command %s: %w", command, err)
+	}
+	if err := waitForMount(path, 10*time.Second); err != nil {
+		if killErr := cmd.Process.Kill(); killErr != nil {
+			glog.Warningf("Failed to stop foreground fuse command %s: %v", command, killErr)
+		}
+		_ = cmd.Wait()
+		return err
+	}
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			glog.V(3).Infof("Foreground fuse command %s exited: %v", command, err)
+		}
+	}()
+	return nil
+}
+
 func Unmount(path string) error {
 	if err := mount.New("").Unmount(path); err != nil {
 		return err
