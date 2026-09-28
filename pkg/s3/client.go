@@ -33,6 +33,7 @@ type Config struct {
 	Endpoint        string
 	Mounter         string
 	Insecure        bool
+	BucketLookup    minio.BucketLookupType
 }
 
 type FSMeta struct {
@@ -64,10 +65,11 @@ func NewClient(cfg *Config) (*s3Client, error) {
 		transport.TLSClientConfig = tlsConfig
 	}
 	minioClient, err := minio.New(endpoint, &minio.Options{
-		Transport: transport,
-		Creds:     credentials.NewStaticV4(client.Config.AccessKeyID, client.Config.SecretAccessKey, ""),
-		Region:    client.Config.Region,
-		Secure:    ssl,
+		Transport:    transport,
+		Creds:        credentials.NewStaticV4(client.Config.AccessKeyID, client.Config.SecretAccessKey, ""),
+		Region:       client.Config.Region,
+		Secure:       ssl,
+		BucketLookup: client.Config.BucketLookup,
 	})
 	if err != nil {
 		return nil, err
@@ -79,14 +81,25 @@ func NewClient(cfg *Config) (*s3Client, error) {
 
 func NewClientFromSecret(secret map[string]string) (*s3Client, error) {
 	insecure, _ := strconv.ParseBool(secret["insecure"])
+	lookup := minio.BucketLookupAuto
+	switch secret["bucketLookup"] {
+	case "", "auto":
+	case "path":
+		lookup = minio.BucketLookupPath
+	case "dns":
+		lookup = minio.BucketLookupDNS
+	default:
+		return nil, fmt.Errorf("invalid bucketLookup %q: use auto, path, or dns", secret["bucketLookup"])
+	}
 	return NewClient(&Config{
 		AccessKeyID:     secret["accessKeyID"],
 		SecretAccessKey: secret["secretAccessKey"],
 		Region:          secret["region"],
 		Endpoint:        secret["endpoint"],
 		// Mounter is set in the volume preferences, not secrets
-		Mounter:  "",
-		Insecure: insecure,
+		Mounter:      "",
+		Insecure:     insecure,
+		BucketLookup: lookup,
 	})
 }
 
