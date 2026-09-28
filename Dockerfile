@@ -1,4 +1,4 @@
-FROM golang:1.25.9-alpine as gobuild
+FROM golang:1.25.9-alpine AS gobuild
 
 WORKDIR /build
 ADD go.mod go.sum /build/
