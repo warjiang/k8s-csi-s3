@@ -33,4 +33,28 @@ func TestS3fsMountArgsUseVirtualHostedStyle(t *testing.T) {
 	if slices.Contains(args, "-o") && slices.Index(args, "-o") == len(args)-1 {
 		t.Fatalf("s3fs options must remain valid: %v", args)
 	}
+	if !hasS3fsMountOption(args, "compat_dir") {
+		t.Fatalf("s3fs must enable compat_dir by default: %v", args)
+	}
+}
+
+func TestS3fsMountArgsDoesNotDuplicateCompatDir(t *testing.T) {
+	mounter, err := newS3fsMounter(&s3.FSMeta{
+		BucketName:   "example-bucket",
+		MountOptions: []string{"-o", "compat_dir"},
+	}, &s3.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	args := mounter.(*s3fsMounter).mountArgs("/target")
+	count := 0
+	for i, arg := range args {
+		if arg == "compat_dir" && i > 0 && args[i-1] == "-o" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("s3fs must pass compat_dir once: %v", args)
+	}
 }

@@ -45,6 +45,9 @@ func (s3fs *s3fsMounter) mountArgs(target string) []string {
 		"-o", "allow_other",
 		"-o", "mp_umask=000",
 	}
+	if !hasS3fsMountOption(s3fs.meta.MountOptions, "compat_dir") {
+		args = append(args, "-o", "compat_dir")
+	}
 	if s3fs.region != "" {
 		args = append(args, "-o", fmt.Sprintf("endpoint=%s", s3fs.region))
 	}
@@ -63,6 +66,19 @@ func (s3fs *s3fsMounter) mountArgs(target string) []string {
 		args = append(args, s3fs.meta.MountOptions[i])
 	}
 	return args
+}
+
+func hasS3fsMountOption(options []string, name string) bool {
+	for i, option := range options {
+		option = strings.TrimSpace(option)
+		if option == "-o" && i+1 < len(options) && strings.TrimSpace(options[i+1]) == name {
+			return true
+		}
+		if option == name || option == "-o"+name || option == "-o="+name {
+			return true
+		}
+	}
+	return false
 }
 
 func writes3fsPass(pwFileContent string) error {
