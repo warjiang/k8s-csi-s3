@@ -38,6 +38,9 @@ stringData:
   endpoint: https://storage.yandexcloud.net
   # For AWS set it to AWS region
   #region: ""
+  # Request style for the controller's S3 API calls: auto, path, or dns.
+  # TOS requires dns (virtual-hosted-style).
+  #bucketLookup: dns
 ```
 
 The region can be empty if you are using some other S3 compatible storage.

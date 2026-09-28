@@ -39,6 +39,8 @@ secret:
   endpoint: https://storage.yandexcloud.net
   # Region
   region: ""
+  # Request style for controller S3 API calls: auto, path, or dns.
+  bucketLookup: ""
 
 tolerations:
   all: false
